@@ -29,29 +29,32 @@ year = {2020}
     * python 3.6.8, pytorch 1.5.0, torchvision 0.6.0, cuda 10.1
 
 2. CrowdHuman data:
-    * CrowdHuman is a benchmark dataset to better evaluate detectors in crowd scenarios. The dataset can be downloaded from http://www.crowdhuman.org/. The path of the dataset is set in `config.py`.
+    * CrowdHuman is a benchmark dataset containing highly overlapped objects to better evaluate wether a detector can better handle crowd scenarios. The dataset can be downloaded from http://www.crowdhuman.org/. The path of the dataset is set in `config.py`.
 
 3. Steps to run:
     * Step1:  training. More training and testing settings can be set in `config.py`.
 	```
-	cd tools
-	python3 train.py -md rcnn_fpn_baseline
+	cd ROOT_DIR/model/DETECTOR_NAME/OWNER_NAME/project
+	#cd tools
+	#python3 train.py -d NUM_GPUS
 	```
     
 	* Step2:  testing. If you have four GPUs, you can use ` -d 0-3 ` to use all of your GPUs.
 			  The result json file will be evaluated automatically.
 	```
-	cd tools
-	python3 test.py -md rcnn_fpn_baseline -r 40
+	#cd tools
+	cd ROOT_DIR/model/DETECTOR_NAME/OWNER_NAME/project
+	python3 test_net.py -d 0-NUM_GPUS -r 30 -e 50
 	```
     
-	* Step3:  evaluating json, inference one picture and visulization json file.
-			  ` -r ` means resume epoch, ` -n ` means number of visulization pictures.
+	* Step3:  evaluating json, inference one picture and visulization json file. All of the value correpsponding the different evalutation metric will be calculated and be saved in a log file
 	```
-	cd tools
-	python3 eval_json.py -f your_json_path.json
-	python3 inference.py -md rcnn_fpn_baseline -r 40 -i your_image_path.png 
-	python3 visulize_json.py -f your_json_path.json -n 3
+	cd ROOT_DIR/model/DETECTOR_NAME/OWNER_NAME/project
+	python3 demo.py
+	#cd tools
+	#python3 eval_json.py -f your_json_path.json
+	#python3 inference.py -md rcnn_fpn_baseline -r 40 -i your_image_path.png 
+	#python3 visulize_json.py -f your_json_path.json -n 3
 	```
 
 # Models
