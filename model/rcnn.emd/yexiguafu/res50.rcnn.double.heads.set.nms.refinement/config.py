@@ -23,7 +23,7 @@ class Config:
 
     usr = getpass.getuser()
     this_model_dir = osp.split(os.path.realpath(__file__))[0].split('/')[-1]
-    output_dir = osp.join(root_dir, 'output', usr, 'fpn', 'human', this_model_dir)
+    output_dir = osp.join(root_dir, 'output', usr, 'fpn.new', 'human', this_model_dir)
     model_dir = osp.join(output_dir, 'model_dump')
     eval_dir = osp.join(output_dir, 'eval_dump')
     log_dir = output_dir
