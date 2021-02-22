@@ -24,7 +24,8 @@ class Config:
     usr = getpass.getuser()
     this_model_dir = osp.split(os.path.realpath(__file__))[0].split('/')[-1]
     workspace = osp.split(osp.realpath(__file__))[0]
-    output_dir = osp.join(root_dir, 'output', usr, 'cascade.rcnn.new', 'human', this_model_dir)
+    output_dir = osp.join(root_dir, 'output', usr, 'cascade.fpn', 'human', this_model_dir)
+    output_dir = 'output'
     model_dir = osp.join(output_dir, 'model_dump')
     eval_dir = osp.join(output_dir, 'eval_dump')
     log_dir = output_dir
@@ -69,7 +70,7 @@ class Config:
 
     # ----------test config---------- #
     test_nms = 0.5
-    test_nms_method = 'set_nms'
+    test_nms_method = 'normal_nms'
     visulize_threshold = 0.3
     pred_cls_threshold = 0.05
 
