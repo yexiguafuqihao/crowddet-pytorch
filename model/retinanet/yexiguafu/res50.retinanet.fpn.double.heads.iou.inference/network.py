@@ -6,14 +6,14 @@ import numpy as np
 from config import config
 from backbone.resnet50 import ResNet50
 from backbone.fpn import FPN
+from det_oprs.anchors_generator import AnchorGenerator
 from det_oprs.retina_anchor_target import retina_anchor_target
 from det_oprs.bbox_opr import bbox_transform_inv_opr, box_overlap_opr, bbox_transform_opr
 from det_oprs.utils import get_padded_tensor
 from module.generate_anchors import generate_anchors
 from rpn_anchor_target_opr import rpn_anchor_target_opr
-from det_oprs.loss_opr import softmax_loss, smooth_l1_loss_retina, sigmoid_cross_entropy_retina, \
-    iou_l1_loss
-import pickle as pkl
+from det_oprs.loss_opr import softmax_loss, iou_l1_loss, smooth_l1_loss_retina,  \
+    sigmoid_cross_entropy_retina
 import pdb
 
 class RetinaNet_AnchorV2(nn.Module):

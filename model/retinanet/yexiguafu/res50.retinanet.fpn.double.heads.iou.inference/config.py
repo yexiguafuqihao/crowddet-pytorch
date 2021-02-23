@@ -64,7 +64,7 @@ class Config:
     anchor_ignore_label = -1
 
     warm_iter = 1874
-    max_epoch = 50
+    max_epoch = 55
     lr_decay = [0, 33, 43]
     nr_images_epoch = 15000
     log_dump_interval = 1
@@ -82,8 +82,6 @@ class Config:
 
     # --------anchor generator config-------- #
     anchor_base_size = 32 # the minimize anchor size in the bigest feature map.
-    # anchor_base_scale = [2**0, 2**(1/3), 2**(2/3)]
-    # anchor_aspect_ratios = [1, 2, 3]
     anchor_base_scale = [1]
     anchor_aspect_ratios = [1, 2, 3]
     num_cell_anchors = len(anchor_aspect_ratios) * len(anchor_base_scale)

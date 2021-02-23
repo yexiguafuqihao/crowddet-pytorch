@@ -2,8 +2,8 @@ import os
 import cv2
 import torch
 import numpy as np
-from config import config
-from utils.misc_utils import load_json_lines, load_gt, load_img
+import os.path as osp
+from utils.misc_utils import load_json_lines, load_img, load_gt
 
 class CrowdHuman(torch.utils.data.Dataset):
     def __init__(self, config, if_train, split_data = None):
@@ -17,7 +17,7 @@ class CrowdHuman(torch.utils.data.Dataset):
             source = config.eval_source
             self.short_size = config.eval_image_short_size
             self.max_size = config.eval_image_max_size
-        self.records = load_json_lines(source)
+        self.records = load_json_lines(source) #if split_data is None else split_data
         if split_data is not None and self.training is False:
             self.records = split_data
         self.config = config
@@ -33,11 +33,15 @@ class CrowdHuman(torch.utils.data.Dataset):
             if_flap = np.random.randint(2) == 1
         else:
             if_flap = False
+        
         # image
-        image_path = os.path.join(self.config.image_folder, record['ID']+'.png')
+        # image_path = os.path.join()
+        image_path = osp.join(self.config.image_folder, record['ID'] + '.png')
         image = load_img(image_path)
-        image_h = image.shape[0]
-        image_w = image.shape[1]
+        # image_h = image.shape[0]
+        # image_w = image.shape[1]
+        image_h, image_w = image.shape[:2]
+        
         if if_flap:
             image = cv2.flip(image, 1)
         if self.training:

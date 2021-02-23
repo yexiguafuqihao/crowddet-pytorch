@@ -18,10 +18,9 @@ def computeJaccard(fpath, save_path ='results.md'):
     fid.close()
 
 def computeIoUs(fpath):
-    
+
     print('Processing {}'.format(osp.basename(fpath)))
     name = os.path.basename(fpath)
-
     mAP, mMR = compute_mAP(fpath)
 
     fid = open('results.md', 'a')
@@ -35,7 +34,7 @@ def computeIoUs(fpath):
 
 
 def eval_all():
-    for epoch in range(25, 55):
+    for epoch in range(50, 55):
         fpath = osp.join(config.eval_dir, 'epoch-{}.human'.format(epoch))
         if not os.path.exists(fpath):
             continue

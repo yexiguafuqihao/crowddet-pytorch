@@ -6,8 +6,9 @@ import torch
 from config import *
 from network import Network
 from CrowdHuman import CrowdHuman
+from utils import nms_utils
 from nms_wrapper import nms
-from utils.misc_utils import save_json_lines, ensure_dir, device_parser
+from utils.misc_utils import *
 from utils.nms_utils import emd_cpu_nms
 import multiprocessing as mp
 import pdb
@@ -24,6 +25,7 @@ def eval_all(args, config, network, model_file, devices):
     for i in range(num_devs):
         start = i * num_image
         end = min(start + num_image, len_dataset)
+        # inference(config, network, model_file, devices[i], crowdhuman, start, end, result_queue)
         proc = mp.Process(target=inference, args=(
                 config, network, model_file, devices[i], crowdhuman, start, end, result_queue))
         proc.start()
@@ -57,12 +59,12 @@ def inference(config, network, model_file, device, dataset, start, end, result_q
     net.cuda(device)
     net.eval()
     # init data
-    dataset = dataset.records[start:end];
-    crowdhuman = CrowdHuman(config, False, dataset)
-    data_iter = torch.utils.data.DataLoader(dataset=crowdhuman, shuffle=False, num_workers=4)
+    dataset = dataset.records[start:end]
+    crowdhuman = CrowdHuman(config, False, split_data = dataset)
+    data_iter = torch.utils.data.DataLoader(dataset=crowdhuman, shuffle=False, num_workers=2)
     # inference
     for i, t in enumerate(data_iter):
-
+        # pdb.set_trace()
         image, gt_boxes, im_info, ID = t
         pred_boxes = net(image.cuda(device), im_info.cuda(device))
         pred_boxes = pred_boxes.data.cpu().numpy()
@@ -91,6 +93,9 @@ def inference(config, network, model_file, device, dataset, start, end, result_q
         elif config.test_nms_method == 'normal_nms':
 
             assert pred_boxes.ndim == 2
+            pred_boxes[:,:4] /= scale
+            scores = pred_boxes[:, 4:6].prod(axis=1).reshape(-1, 1)
+            pred_boxes = np.hstack([pred_boxes[:,:4], scores])
             flag = pred_boxes[:, 4] >= config.pred_cls_threshold
             cls_boxes = pred_boxes[flag]
             keep = nms(np.float32(cls_boxes), config.test_nms)
@@ -131,8 +136,8 @@ def run_test():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--devices', '-d', default='0', type=str)
-    parser.add_argument('--start_epoch', '-s', default=45, type=int)
-    parser.add_argument('--end_epoch','-e', default=55, type=int)
+    parser.add_argument('--start_epoch', '-s', default=25, type=int)
+    parser.add_argument('--end_epoch','-e', default=35, type=int)
     os.environ['NCCL_IB_DISABLE'] = '1'
     args = parser.parse_args()
     
