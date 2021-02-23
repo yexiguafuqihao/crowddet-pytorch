@@ -5,9 +5,8 @@ This is the pytorch re-implementation of the paper "[Detection in Crowded Scenes
 <!-- Our method aiming at detecting highly-overlapped instances in crowded scenes. -->
 Object detection in crowded scenes is challenging. When objects gather, they tend to overlap largely with each other, leading to occlusions. Occlusion caused by objects of the same class is called intra-class occlusion, also referred to as crowd occlusion. Object detectors need to determine the locations of different objects in the crowd and accurately delineate their boundaries. Many cases are quite challenging even for human annotators.
 
-To address 
-
-The key of our approach is to let each proposal predict a set of instances that might be highly overlapped rather than a single one in previous proposal-based frameworks. With this scheme, the predictions of nearby proposals are expected to infer the **same set** of instances, rather than **distinguishing individuals**, which is much easy to be learned. Equipped with new techniques such as EMD Loss and Set NMS, our detector can effectively handle the difficulty of detecting highly overlapped objects.
+To address the aforementioned problem, this paper proposal a schema that one anchor/proposal can predict multiple predictions simultaneously. With this scheme, the predictions of nearby proposals are expected to infer the **same set** of instances, rather than **distinguishing individuals**, which is much easy to be learned. Besides, A new NMS mothod called set NMS is design to remove the duplicates during the inference time. The EMD loss is devised to obtain the minimal loss during optimization based on the truth that a set of combinations can be obtained between the predicitons and groundtruth boxes. Therefore, the combinition that produces the minimal loss can be choosen to better opitimize the model during training. Additional, the proposed schema can be deployed on the mainstream detector such as [Cascade RCNN](https://arxiv.org/pdf/1712.00726.pdf), [FPN](https://arxiv.org/pdf/1612.03144.pdf) and [RetinaNet](https://arxiv.org/pdf/1708.02002.pdf).
+<!-- Equipped with new techniques such as EMD Loss and Set NMS, our detector can effectively handle the difficulty of detecting highly overlapped objects. -->
 
 The network structure and results are shown here:
 
