@@ -5,9 +5,8 @@ This is the pytorch re-implementation of the paper "[Detection in Crowded Scenes
 <!-- Our method aiming at detecting highly-overlapped instances in crowded scenes. -->
 Object detection in crowded scenes is challenging. When objects gather, they tend to overlap largely with each other, leading to occlusions. Occlusion caused by objects of the same class is called intra-class occlusion, also referred to as crowd occlusion. Object detectors need to determine the locations of different objects in the crowd and accurately delineate their boundaries. Many cases are quite challenging even for human annotators.
 
-To address the aforementioned problem, this paper proposed a schema that one anchor/proposal can predict multiple predictions simultaneously. With this scheme, the predictions of nearby proposals are expected to infer the **same set** of instances, rather than **distinguishing individuals**, which is much easy for the model to learn. Besides, A new NMS method called set NMS is designed to remove the duplicates during the inference time. The EMD loss is devised to obtain the minimal loss during optimization based on the truth that a set of combinations can be obtained between the predictions and groundtruth boxes. Therefore, the combination that produces the minimal loss can be chosen to better optimize the model during training. Additionally, the proposed schema can be deployed on the mainstream detectors such as [Cascade RCNN](https://arxiv.org/pdf/1712.00726.pdf), [FPN](https://arxiv.org/pdf/1612.03144.pdf) and [RetinaNet](https://arxiv.org/pdf/1708.02002.pdf). The implementation details can be views in the repository.
+To address the aforementioned problem, this paper proposed a schema that one anchor/proposal can predict multiple predictions simultaneously. With this scheme, the predictions of nearby proposals are expected to infer the **same set** of instances, rather than **distinguishing individuals**, which is much easy for the model to learn. Besides, A new NMS method called set NMS is designed to remove the duplicates during the inference time. The EMD loss is devised to obtain the minimal loss during optimization based on the truth that a set of combinations can be obtained between the predictions and groundtruth boxes. Therefore, the combination that produces the minimal loss can be chosen to better optimize the model during training. Additionally, the proposed schema can be deployed on the mainstream detectors such as [Cascade RCNN](https://arxiv.org/pdf/1712.00726.pdf), [FPN](https://arxiv.org/pdf/1612.03144.pdf) and also one-stage detector [RetinaNet](https://arxiv.org/pdf/1708.02002.pdf). The implementation details can be views in the repository.
 
-<!-- Equipped with new techniques such as EMD Loss and Set NMS, our detector can effectively handle the difficulty of detecting highly overlapped objects. -->
 
 The model structure and results are shown here:
 
@@ -57,8 +56,22 @@ year = {2020}
 # Models
 
 This proiect is a re-implementation based on Pytorch.
-<!-- We use pre-trained model from Detectron2 Model Zoo: https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/MSRA/R-50.pkl. (or [R-50.pkl](https://drive.google.com/open?id=1qWAwY8QOhYRazxRuIhRA55b8YDxdOR8_)) -->
 We use pre-trained model from [MegEngine Model Hub](https://megengine.org.cn/model-hub) and convert this model to pytorch. You can get this model from [GoogleDrive](https://drive.google.com/file/d/1lfYQHC63oM2Dynbfj6uD7XnpDIaA5kNr/view?usp=sharing) or [Baidu Netdisk](https://pan.baidu.com/s/1U3I-qNIrXuYQzUEDDdISTw)(code:yx46).
 | Model | Top1 acc | Top5 acc |
 | --- | --- | --- |
 | ResNet50 | 76.254 | 93.056 |
+
+All models are re-trained based on [ResNet-50](https://arxiv.org/pdf/1512.03385.pdf).
+
+| | mAP | mMR | mJI | Model
+| --- | --- | --- | --- | --- |
+| RCNN FPN Baseline | 0.8708 | 0.4262 | 0.7973 | [rcnn_fpn_baseline_mge.pth]() |
+| RCNN EMD Simple   | 0.9027 | 0.4208 | 0.8246 | [rcnn_emd_simple_mge.pth](https://drive.google.com/file/d/1S8nHUM3smevg3UJQ_5hXGQm_E4_xkOsG/view?usp=sharing) |
+| RCNN EMD with RM  | 0.9041 | 0.4145 | 0.8251 | [rcnn_emd_refine_mge.pth](https://drive.google.com/file/d/1OnHAN0RktBeYiZqAZqlb3yFFE8lVU-cG/view?usp=sharing) |
+
+
+| Cascade FPN RCNN Baseline    | 0. | 0. | 0. | [rcnn_fpn_baseline.pth]() |
+| Cascade FPN RCNN EMD Simple  | 0.9048 | 0.4022 | 0.8314 | [rcnn_emd_simple.pth]() |
+| Cascade FPN RCNN EMD with RM | 0. | 0. | 0. | [rcnn_emd_refine.pth]() |
+| RetinaNet FPN Baseline | 0.8793 | 0.4753 | 0.7729 | [retinanet_baseline.pth](https://drive.google.com/file/d/10oYq6gjcW8UQysZK5lML0ahWBzH-yHBS/view?usp=sharing) |
+| RetinaNet Simple       | 0.8988 | 0.4779 | 0.7931 | [retinanet_simple.pth](https://drive.google.com/file/d/10oYq6gjcW8UQysZK5lML0ahWBzH-yHBS/view?usp=sharing)
