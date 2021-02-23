@@ -41,8 +41,7 @@ def eval_all():
         if not os.path.exists(fpath):
             continue
         computeIoUs(fpath)
-
-
+    
 if __name__ == '__main__':
 
     eval_all()
