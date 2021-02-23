@@ -32,14 +32,12 @@ year = {2020}
     * python 3.6.8, pytorch 1.5.0, torchvision 0.6.0, cuda 10.1
 
 2. CrowdHuman data:
-    * CrowdHuman is a benchmark dataset containing highly overlapped objects to better evaluate wether a detector can better handle crowd scenarios. The dataset can be downloaded from http://www.crowdhuman.org/. The path of the dataset is set in `config.py`.
+    * CrowdHuman is a benchmark dataset containing highly overlapped objects to better evaluate whether a detector can better handle crowd scenarios. The dataset can be downloaded from http://www.crowdhuman.org/. The path of the dataset is set in `config.py`.
 
 3. Steps to run:
     * Step1:  training. More training and testing settings can be set in `config.py`.
     ```
     cd ROOT_DIR/model/DETECTOR_NAME/OWNER_NAME/project
-    <!-- cd tools -->
-    <!-- python3 train.py -d NUM_GPUS -->
     ```
     
     * Step2:  testing. If you have four GPUs, you can use ` -d 0-NUM_GPUS ` to use all of your GPUs.
@@ -54,10 +52,6 @@ year = {2020}
     ```
     cd ROOT_DIR/model/DETECTOR_NAME/OWNER_NAME/project
     python3 demo.py
-    <!-- #cd tools
-    #python3 eval_json.py -f your_json_path.json
-    #python3 inference.py -md rcnn_fpn_baseline -r 40 -i your_image_path.png 
-    #python3 visulize_json.py -f your_json_path.json -n 3 -->
     ```
 
 # Models
