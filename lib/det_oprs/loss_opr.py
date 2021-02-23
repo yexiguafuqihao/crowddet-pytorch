@@ -162,5 +162,3 @@ def smooth_l1_loss_rcnn_single(
     value = _smooth_l1_base(pred, gt, sigma)
     loss = (value * label_mask).sum() / pred.shape[0]
     return loss
-
-
