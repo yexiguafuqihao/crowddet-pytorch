@@ -1,5 +1,6 @@
 from .box import *
-import os
+import os, sys
+import os.path as osp
 import copy
 import numpy as np
 import pdb
@@ -27,8 +28,6 @@ class ImageBase(object):
         self._ignNum = None
         self._gtNum = None
         self._dtNum = None
-        self.nori_path = None
-        self.nori_id = None
 
     def __str__(self):
         return str(self.dumpOdf("all"))
@@ -57,17 +56,9 @@ class ImageBase(object):
         :return: the [width, height] of the image
         """
         if self._width is None or self._height is None:
-            imgpath = os.path.join(self.imgroot, self.fpath)
             img = None
-            if os.path.isfile(imgpath):
-                img = cv2.imread(imgpath)
-            elif os.path.exists(self.nori_path) and self.nori_id is not None:
-                import numpy as np
-                import nori2 as nori
-                with nori.open(self.nori_path, 'r') as nr:
-                    rawd = nr.get(self.nori_id)
-                    #img = cv2.imdecode(np.fromstring(rawd, dtype=np.uint8), -1)
-                    img = cv2.imdecode(np.fromstring(rawd, dtype=np.uint8))
+            imgpath = osp.join(self.imgroot, self.fpath)
+            img = cv2.imread(imgpath)
             self._width, self._height = img.shape[1], img.shape[0]
         return self._width, self._height
 
@@ -209,10 +200,7 @@ class ImageBase(object):
             self._width = odf["width"]
         if self._height is None and "height" in odf:
             self._height = odf["height"]
-        if self.nori_path is None and "nori_path" in odf:
-            self.nori_path = odf["nori_path"]
-        if self.nori_id is None and "nori_id" in odf:
-            self.nori_id = odf["nori_id"]
+
         
         if gtflag and "gtboxes" in odf and odf["gtboxes"] is not None:
             self.gtNum = len(odf["gtboxes"])
@@ -309,29 +297,9 @@ class ImageBase(object):
         :meth: read the image from imgroot + fpath. If TrainImage.flipped is True, the returned image will be flipped
         :return: the image mat
         """
-        load_from_nori = 0
-        try:
-            imgpath = os.path.join(self.imgroot, self.fpath)
-        except:
-            load_from_nori = 1
-
-
-
-        #assert os.path.isfile(imgpath), imgpath + " does not exist!"
-        if load_from_nori == 0:
-            img = None
-            if os.path.isfile(imgpath):
-                img = cv2.imread(imgpath)
-            else:
-                load_from_nori = 1
-                
-
-        if load_from_nori == 1 and  os.path.exists(self.nori_path) and self.nori_id is not None:
-            import numpy as np
-            import nori2 as nori
-            with nori.open(self.nori_path, 'r') as nr:
-                rawd = nr.get(self.nori_id)
-                img = cv2.imdecode(np.fromstring(rawd, dtype=np.uint8), -1)
+        
+        imgpath = os.path.join(self.imgroot, self.fpath)
+        img = cv2.imread(imgpath)
 
         assert img is not None, 'image {} do not exist'.format(self.fpath)
 
