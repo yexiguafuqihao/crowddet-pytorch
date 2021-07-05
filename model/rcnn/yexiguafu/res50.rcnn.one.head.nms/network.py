@@ -2,7 +2,6 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import numpy as np
-
 from config import config
 from backbone.resnet50 import ResNet50
 from backbone.fpn import FPN

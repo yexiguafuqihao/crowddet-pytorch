@@ -8,9 +8,9 @@ def add_path(path):
         sys.path.insert(0, path)
 
 root_dir = '../../../..'
-add_path(os.path.join(root_dir))
 add_path(os.path.join(root_dir, 'lib'))
-add_path(osp.join(root_dir, 'util'))
+add_path(osp.join(root_dir, 'utils'))
+
 class Crowdhuman:
     class_names = ['background', 'person']
     num_classes = len(class_names)
@@ -62,7 +62,7 @@ class Config:
 
     warm_iter = 800
     max_epoch = 35
-    lr_decay = [24, 27]
+    lr_decay = [25, 30]
     nr_images_epoch = 15000
     log_dump_interval = 1
     iter_per_epoch = nr_images_epoch // train_batch_per_gpu

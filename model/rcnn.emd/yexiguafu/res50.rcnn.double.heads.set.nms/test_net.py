@@ -1,19 +1,19 @@
-import math
+import os, math
 import argparse
 import numpy as np
 import os.path as osp
 from tqdm import tqdm
 import torch
-from config import *
+from config import config
 from network import Network
 from data.CrowdHuman import CrowdHuman
 from torch.utils.data import DataLoader
-from utils import nms_utils
-from utils.nms_utils import set_cpu_nms as  emd_cpu_nms
-from utils.misc_utils import ensure_dir, device_parser, save_json_lines
+from kits.nms_utils import set_cpu_nms as emd_cpu_nms
+from kits.misc_utils import ensure_dir, device_parser, save_json_lines
 from nms_wrapper import nms
 import torch.multiprocessing as mp
 import pdb
+
 def eval_all(args, config, network, model_file, devices):
     
     crowdhuman = CrowdHuman(config, if_train=False)
@@ -56,20 +56,20 @@ def inference(config, network, model_file, device, dataset, start, end, result_q
     # init model
     net = network()
 
-    # net = net.eval()
     check_point = torch.load(model_file, map_location='cpu')
     net.load_state_dict(check_point['state_dict'])
-    net.cuda(device)
+    
+    device_id = 'cuda:{}'.format(device)
+    net.cuda(device_id)
     net = net.eval()
+
     # init data
-    # dataset.records = dataset.records[start:end]
-    # splitted_data = dataset
     dataset = dataset.records[start:end]
     crowdhuman = CrowdHuman(config, if_train=False, splitted_data=dataset)
     data_iter = DataLoader(crowdhuman, shuffle = False,
             batch_size=1,
             num_workers=4,)
-    # data_iter = .DataLoader(dataset=dataset, shuffle=False)
+
     # inference
     for i, t in enumerate(data_iter):
 
@@ -115,9 +115,9 @@ def inference(config, network, model_file, device, dataset, start, end, result_q
             raise NotImplementedError('Unknown NMS method.')
 
         pred_boxes = xyxy2xywh(pred_boxes)
-        gt_boxes = xyxy2xywh(gt_boxes[0].numpy())
+        # gt_boxes = xyxy2xywh(gt_boxes[0].numpy())
         result_dict = dict(ID=ID[0], height=int(im_info[0, -3]), width=int(im_info[0, -2]),
-                dtboxes=boxes_dump(pred_boxes), gtboxes=boxes_dump(gt_boxes))
+                dtboxes=boxes_dump(pred_boxes))
         result_queue.put_nowait(result_dict)
 
 def boxes_dump(boxes):
@@ -145,6 +145,7 @@ def run_test():
     parser.add_argument('--start_epoch', '-s', default=25, type=int)
     parser.add_argument('--end_epoch','-e', default=35, type=int)
     os.environ['NCCL_IB_DISABLE'] = '1'
+    
     args = parser.parse_args()
     
     saveDir = config.eval_dir

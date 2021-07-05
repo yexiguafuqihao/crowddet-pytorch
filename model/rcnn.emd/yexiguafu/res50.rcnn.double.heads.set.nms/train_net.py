@@ -1,10 +1,9 @@
 import argparse
-import torch
+import torch, time
 from config import *
 from network import Network
-import time
 from data.CrowdHuman import CrowdHuman
-from utils import misc_utils, SGD_bias
+from kits.misc_utils import ensure_dir
 import torch.multiprocessing as mp
 import torch.distributed as dist
 import pdb
@@ -54,14 +53,14 @@ def do_train_epoch(net, data_iter, optimizer, rank, epoch, config):
         optimizer.zero_grad()
         # forward
         outputs = net(images.cuda(rank), im_info.cuda(rank), gt_boxes.cuda(rank))
-        # collect the loss
-        total_loss = sum([outputs[key].mean() for key in outputs.keys()])
 
-        outputs = {k:v.data.cpu().numpy() for k, v in outputs.items()}
-        print_str = ''
+        total_loss = sum([outputs[k].mean() for k in outputs.keys() if 'loss' in k])
+        # collect the loss
+        outputs = {k:v.item() for k, v in outputs.items() if 'loss' in k}
+        
+        print_str = 'total_loss:{:.4f}, '.format(total_loss.item())
         for k, v in outputs.items():
-            print_str += '{}: {:.3f}, '.format(k, v)
-        print_str += 'total_loss: {:.3f}.'.format(total_loss.data.cpu().numpy())
+            print_str = print_str + '{}:{:.4f}, '.format(k, v)
 
         total_loss.backward()
        
@@ -78,7 +77,7 @@ def do_train_epoch(net, data_iter, optimizer, rank, epoch, config):
                     config.iter_per_epoch,
                     elt,
                     optimizer.param_groups[0]['lr'],
-                    print_str,
+                    print_str[:-2],
                     workspace,
                     )
                 print(line)
@@ -159,7 +158,7 @@ def main(args, config, network):
     line = 'network.lr.{:.4f}.train.{}'.format(config.learning_rate, config.max_epoch)
     config.log_path = osp.join(config.model_dir, '..', line + '.logger')
 
-    misc_utils.ensure_dir(config.model_dir)
+    ensure_dir(config.model_dir)
     if not osp.exists('output'):
         os.symlink(config.output_dir,'output')
     
@@ -184,11 +183,12 @@ def run_train():
     parser.add_argument('--resume_weights', '-r', default=None, type=str)
     parser.add_argument('--num-gpus', '-d', default = 1, type=int)
     port =find_free_port()
-    os.environ['MASTER_ADDR'] = '127.0.0.1'
+    local_addr = '127.0.0.1'
+    os.environ['MASTER_ADDR'] = local_addr
     os.environ['MASTER_PORT'] = '{}'.format(port)
     os.environ['NCCL_IB_DISABLE'] = '1'
 
-    print('communication link:{}:{}'.format('127.0.0.1', port))
+    print('communication link:{}:{}'.format(local_addr, port))
     args = parser.parse_args()
     main(args, config, Network)
 

@@ -1,16 +1,16 @@
+import os,sys
 import math
 import argparse
 import numpy as np
 import os.path as osp
 from tqdm import tqdm
 import torch
-from config import *
+from config import config
 from network import Network
 from data.CrowdHuman import CrowdHuman
 from torch.utils.data import DataLoader
-from utils import nms_utils
-from utils.nms_utils import set_cpu_nms as  emd_cpu_nms
-from utils.misc_utils import ensure_dir, device_parser, save_json_lines
+from kits.nms_utils import set_cpu_nms as  emd_cpu_nms
+from kits.misc_utils import ensure_dir, device_parser, save_json_lines
 from nms_wrapper import nms
 import torch.multiprocessing as mp
 import pdb
@@ -56,20 +56,17 @@ def inference(config, network, model_file, device, dataset, start, end, result_q
     # init model
     net = network()
 
-    # net = net.eval()
     check_point = torch.load(model_file, map_location='cpu')
     net.load_state_dict(check_point['state_dict'])
     net.cuda(device)
     net = net.eval()
+
     # init data
-    # dataset.records = dataset.records[start:end]
-    # splitted_data = dataset
     dataset = dataset.records[start:end]
     crowdhuman = CrowdHuman(config, if_train=False, splitted_data=dataset)
     data_iter = DataLoader(crowdhuman, shuffle = False,
-            batch_size=1,
-            num_workers=4,)
-    # data_iter = .DataLoader(dataset=dataset, shuffle=False)
+                           batch_size=1, num_workers=4,)
+
     # inference
     for i, t in enumerate(data_iter):
 
@@ -144,11 +141,13 @@ def run_test():
     parser.add_argument('--start_epoch', '-s', default=25, type=int)
     parser.add_argument('--end_epoch','-e', default=35, type=int)
     os.environ['NCCL_IB_DISABLE'] = '1'
+    
     args = parser.parse_args()
     
     saveDir = config.eval_dir
     ensure_dir(saveDir)
     devices = device_parser(args.devices)
+    print(devices)
 
     start_epoch, end_epoch = args.start_epoch, args.end_epoch
     for epoch in range(start_epoch, end_epoch):
@@ -163,5 +162,6 @@ def run_test():
         save_json_lines(results, fpath)
 
 if __name__ == '__main__':
-    run_test()
 
+
+    run_test()
