@@ -25,7 +25,7 @@ def device_parser(str_device):
         device_id = str_device.split('-')
         device_id = [i for i in range(int(device_id[0]), int(device_id[1])+1)]
     else:
-        device_id = [int(str_device)]
+        device_id = [i for i in range(int(str_device))]
     return device_id
 
 def ensure_dir(dirpath):

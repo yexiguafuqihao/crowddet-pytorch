@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import os.path as osp
 from config import config
-from utils.misc_utils import load_json_lines, load_img, load_gt
+from kits.misc_utils import load_json_lines, load_img, load_gt
 
 class CrowdHuman(torch.utils.data.Dataset):
 
@@ -157,8 +157,6 @@ class CrowdHuman(torch.utils.data.Dataset):
         # image
         image_path = osp.join(self.config.image_folder, record['ID']+'.png')
         image = load_img(image_path)
-        # image_h = image.shape[0]
-        # image_w = image.shape[1]
         image_h, image_w = image.shape[:2]
 
         if if_flap:
@@ -176,11 +174,7 @@ class CrowdHuman(torch.utils.data.Dataset):
             im_info = np.array([0, 0, 1, image_h, image_w, nr_gtboxes])
             return image, gtboxes, im_info
         else:
-            # image
-            # t_height, t_width, scale = target_size(
-            #         image_h, image_w, self.short_size, self.max_size)
-            # INTER_CUBIC, INTER_LINEAR, INTER_NEAREST, INTER_AREA, INTER_LANCZOS4
-            # resized_image = cv2.resize(image, (t_width, t_height), interpolation=cv2.INTER_LINEAR)
+            
             resized_image, scale = self.resize_img_by_short_and_max_size(image,
                 self.short_size, self.max_size)
             t_height, t_width = resized_image.shape[:2]
