@@ -3,19 +3,19 @@ import argparse
 import numpy as np
 from tqdm import tqdm
 import torch
-from config import *
+from config import config
 from network import Network
-from CrowdHuman import CrowdHuman
-from utils import nms_utils
-from nms_wrapper import *
-from utils.misc_utils import *
-# from common import *
+from crowdhuman import CrowdHuman
+from kits.misc_utils import *
+from common import *
+from emd_cpu_nms import emd_cpu_nms
 import multiprocessing as mp
 import pdb
 def eval_all(args, config, network, model_file, devices):
     
     crowdhuman = CrowdHuman(config, if_train=False)
     num_devs = len(devices)
+
     len_dataset = len(crowdhuman)
     num_image = math.ceil(len_dataset / num_devs)
     result_queue = mp.Queue(5000)
@@ -24,6 +24,7 @@ def eval_all(args, config, network, model_file, devices):
     for i in range(num_devs):
         start = i * num_image
         end = min(start + num_image, len_dataset)
+        # inference(config, network, model_file, devices[i], crowdhuman, start, end, result_queue)
         proc = mp.Process(target=inference, args=(
                 config, network, model_file, devices[i], crowdhuman, start, end, result_queue))
         proc.start()
@@ -55,11 +56,10 @@ def inference(config, network, model_file, device, dataset, start, end, result_q
     check_point = torch.load(model_file, map_location='cpu')
     net.load_state_dict(check_point['state_dict'])
     net.cuda(device)
-    net = net.eval()
+    net.eval()
     # init data
-    dataset = dataset.records[start:end];
-    crowdhuman = CrowdHuman(config, False, dataset)
-    data_iter = torch.utils.data.DataLoader(dataset=crowdhuman, shuffle=False, num_workers=2)
+    dataset.records = dataset.records[start:end];
+    data_iter = torch.utils.data.DataLoader(dataset=dataset, shuffle=False, num_workers=2)
     # inference
     for i, t in enumerate(data_iter):
 
@@ -70,41 +70,41 @@ def inference(config, network, model_file, device, dataset, start, end, result_q
         pred_boxes = pred_boxes[0]
         gt_boxes = gt_boxes[0].data.cpu().numpy()
         scale = im_info[0, 2]
-        del image, t
+
         
         if config.test_nms_method == 'set_nms':
 
             pred_boxes[:,:4] /= scale
             n = pred_boxes.shape[0] // 2
+            ind = np.tile(np.arange(n).reshape(-1, 1), (1, 2)).reshape(-1, 1)
 
-            pred_boxes = np.hstack((pred_boxes[:,:4], scores))
+            scores = pred_boxes[:,4:6].prod(axis=1).reshape(-1, 1)
+            pred_boxes = np.hstack((pred_boxes[:,:4],scores, ind))
             flag = pred_boxes[:, 4] >= config.pred_cls_threshold
             pred_boxes = pred_boxes[flag]
-            keep = nms(np.float32(pred_boxes), 0.5)
-
+            # keep = nms(np.float32(pred_boxes), 0.5)
+            keep = emd_cpu_nms(pred_boxes, 0.5, 1)
             n = len(keep)
             tag = np.ones([n, 1])
-            pred_boxes = np.hstack([pred_boxes[keep, :5], tag])
+            pred_boxes = np.hstack([pred_boxes[keep], tag])
 
         elif config.test_nms_method == 'normal_nms':
 
             assert pred_boxes.ndim == 2
-            scores = np.prod(pred_boxes[:, 4:6], axis=1)
-            pred_boxes[:, :4] /= scale
-            
-            # pred_boxes 
-            pred_boxes = np.hstack([pred_boxes[:,:4], scores.reshape(-1, 1)])
+            pred_boxes[:,:4] /= scale
+            scores = pred_boxes[:,4:6].prod(axis=1).reshape(-1, 1)
+            pred_boxes = np.hstack([pred_boxes[:,:4], scores])
             flag = pred_boxes[:, 4] >= config.pred_cls_threshold
             cls_boxes = pred_boxes[flag]
             keep = nms(np.float32(cls_boxes), config.test_nms)
-            n = len(keep)
-            tag = np.linspace(0, n-1, n).reshape(-1, 1)
+            tag = np.ones([len(keep), 1])
             pred_boxes = np.hstack([cls_boxes[keep], tag])
 
         elif config.test_nms_method == 'none':
 
             keep = pred_boxes[:, 4] > config.pred_cls_threshold
-            pred_boxes = pred_boxes[keep]
+            pred_boxes = np.hstack([pred_boxes[keep], np.ones(len(keep), 1)])
+
         
         else:
             raise ValueError('Unknown NMS method.')

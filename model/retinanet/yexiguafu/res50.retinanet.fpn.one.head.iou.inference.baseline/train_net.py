@@ -1,25 +1,14 @@
-import os, sys
-import os.path as osp
 import argparse
-import torch
+import os, sys
+import torch, time
+import os.path as osp
 from config import config
 from network import Network
-import time
-from CrowdHuman import CrowdHuman
-from utils.misc_utils import ensure_dir
+from crowdhuman import CrowdHuman
+from kits.misc_utils import ensure_dir
 import torch.multiprocessing as mp
 import torch.distributed as dist
-import socket
-import pdb
-def find_free_port():
-
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # Binding to port 0 will cause the OS to find an available port for us
-    sock.bind(("", 0))
-    port = sock.getsockname()[1]
-    sock.close()
-    # NOTE: there is still a chance the port could be taken by other processes.
-    return port
+import socket, pdb
 
 def do_train_epoch(net, data_iter, optimizer, rank, epoch, config):
     
@@ -33,8 +22,10 @@ def do_train_epoch(net, data_iter, optimizer, rank, epoch, config):
     for param_group in optimizer.param_groups:
         param_group['lr'] = learning_rate
 
+    if rank == 0:
+        print('Original learning rate:{:.3f}'.format(basic_lr))
+
     tic = time.time()
-    workspace = osp.split(osp.realpath(__file__))[0]
     steps = range(0, config.iter_per_epoch)
     n = epoch * config.iter_per_epoch
     for t, step in zip(data_iter, steps):
@@ -60,24 +51,23 @@ def do_train_epoch(net, data_iter, optimizer, rank, epoch, config):
         outputs = net(images.cuda(rank), im_info.cuda(rank), gt_boxes.cuda(rank))
         # collect the loss
         total_loss = sum([outputs[key].mean() for key in outputs.keys()])
-        outputs = {k:v.data.cpu().numpy() for k, v in outputs.items()}
-        print_str = ''
-        for k, v in outputs.items():
-            print_str += '{}: {:.3f}, '.format(k, v)
-        print_str += 'total_loss: {:.3f}.'.format(total_loss.data.cpu().numpy())
-
         # assert torch.isfinite(total_loss).all(), outputs
         total_loss.backward()
         optimizer.step()
         n += 1
+        
+        line = 'total_loss:{:.4f}, '.format(total_loss.item())
+        losses = {k:v.item() for k, v in outputs.items() if 'loss' in k}
+        for k, v in outputs.items():
+            line = line + '{}:{:.4f}, '.format(k, v)
+        line = line[:-2]
 
         # stastic
         if rank == 0:
             if step % config.log_dump_interval == 0:
-                stastic_total_loss = total_loss.item()
                 elt = images.shape[0] * config.log_dump_interval / (time.time() - tic)
-                line = 'Epoch:{}, iter:{}, speed:{:.3f} mb/s, lr:{:.5f}, {}\n{}.'.format(
-                    epoch, step, elt, optimizer.param_groups[0]['lr'], print_str, workspace)
+                line = 'Epoch:{}, iter:{}, speed:{:.3f} mb/s, lr:{:.5f}, {}.'.format(
+                    epoch, step, elt, optimizer.param_groups[0]['lr'], line)
                 print(line)
                 fid_log.write(line+'\n')
                 fid_log.flush()
@@ -85,7 +75,18 @@ def do_train_epoch(net, data_iter, optimizer, rank, epoch, config):
     if rank == 0:
         fid_log.close()
 
+def _find_free_port():
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # Binding to port 0 will cause the OS to find an available port for us
+    sock.bind(("", 0))
+    port = sock.getsockname()[1]
+    sock.close()
+    # NOTE: there is still a chance the port could be taken by other processes.
+    return port
+
 def train_worker(rank, network, config, args):
+    
     # set the parallel
     dist.init_process_group(backend='nccl',
                             init_method='env://',
@@ -158,14 +159,12 @@ def main(args, config, network):
     config.log_path = osp.join(config.model_dir, '..', line + '.logger')
 
     ensure_dir(config.model_dir)
-    if not osp.exists('output'):
-        os.symlink(config.output_dir, 'output')
-
-    # print the training config
+    
     line = 'Num of GPUs:{}, learning rate:{:.5f}, mini batch size:{}, \
             \ntrain_epoch:{}, iter_per_epoch:{}, decay_epoch:{}'.format(
             num_gpus, config.learning_rate, config.train_batch_per_gpu,
             config.max_epoch, config.iter_per_epoch, config.lr_decay)
+    
     print(line)
     print("Init multi-processing training...")
     
@@ -175,21 +174,20 @@ def main(args, config, network):
     else:
         train_worker(0, network, config, args)
 
-
 def run_train():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--resume_weights', '-r', default=None, type=str)
-    parser.add_argument('--num-gpus', '-d', default = 1, type=int)
-
-    port = find_free_port()
+    parser.add_argument('--num-gpus', '-n', default = 1, type=int)
+    
+    port = _find_free_port()
     os.environ['MASTER_ADDR'] = '127.0.0.1'
-    os.environ['MASTER_PORT'] = '{}'.format(port)
+    os.environ['MASTER_PORT'] = str(port)
     os.environ['NCCL_IB_DISABLE'] = '1'
     args = parser.parse_args()
     
     main(args, config, Network)
 
 if __name__ == '__main__':
+    
     run_train()
-

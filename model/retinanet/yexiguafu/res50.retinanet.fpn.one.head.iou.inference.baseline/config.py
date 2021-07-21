@@ -8,9 +8,8 @@ def add_path(path):
         sys.path.insert(0, path)
 
 root_dir = '../../../..'
-add_path(osp.join(root_dir))
 add_path(osp.join(root_dir, 'lib'))
-add_path(osp.join(root_dir, 'util'))
+add_path(osp.join(root_dir, 'utils'))
 
 class Crowd_human:
 
@@ -64,14 +63,13 @@ class Config:
     anchor_ignore_label = -1
 
     warm_iter = 1874
-    max_epoch = 52
-    lr_decay = [0, 33, 43]
+    max_epoch = 50
+    lr_decay = [0, 30, 40]
     nr_images_epoch = 15000
     log_dump_interval = 1
     iter_per_epoch = nr_images_epoch // train_batch_per_gpu
 
     # ----------test config---------- #
-    # test_layer_topk = 1000
     test_nms = 0.5
     test_nms_method = 'normal_nms'
     visulize_threshold = 0.3
@@ -83,8 +81,6 @@ class Config:
 
     # --------anchor generator config-------- #
     anchor_base_size = 32 # the minimize anchor size in the bigest feature map.
-    # anchor_base_scale = [2**0, 2**(1/3), 2**(2/3)]
-    # anchor_aspect_ratios = [1, 2, 3]
     anchor_base_scale = [1]
     anchor_aspect_ratios = [1, 2, 3]
     num_cell_anchors = len(anchor_aspect_ratios) * len(anchor_base_scale)

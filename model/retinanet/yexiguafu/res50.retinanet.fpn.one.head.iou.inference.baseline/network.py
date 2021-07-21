@@ -9,11 +9,12 @@ from backbone.fpn import FPN
 from det_oprs.anchors_generator import AnchorGenerator
 from det_oprs.retina_anchor_target import retina_anchor_target
 from det_oprs.bbox_opr import bbox_transform_inv_opr, box_overlap_opr, bbox_transform_opr
-from det_oprs.loss_opr import emd_loss_focal
 from det_oprs.utils import get_padded_tensor
+# from generate_anchors import generate_anchors
+# from rpn_anchor_target_opr import rpn_anchor_target_opr
 from module.generate_anchors import generate_anchors
-from rpn_anchor_target_opr import rpn_anchor_target_opr
-from det_oprs.loss_opr import sigmoid_cross_entropy_retina, smooth_l1_loss_retina,iou_l1_loss
+from det_oprs.rpn_anchor_target_opr import rpn_anchor_target_opr
+from det_oprs import loss_opr
 import pdb
 
 class RetinaNet_AnchorV2(nn.Module):
@@ -97,10 +98,10 @@ class Network(nn.Module):
                 pred_reg_list, rpn_iou_list, im_info)
             return results
     
-    @torch.no_grad()
     def forward_inference(self, anchors_list, pred_cls_list,
         pred_reg_list, rpn_iou_list, im_info):
 
+        shapes = [r.shape for r in anchors_list]
         all_anchors = torch.cat(anchors_list, dim = 0)
         cls_scores = torch.cat(pred_cls_list, dim = 1)
         bbox_pred = torch.cat(pred_reg_list, dim = 1)
@@ -183,11 +184,11 @@ class RetinaNetCriteriaV2(nn.Module):
         labels = a
         target_boxes = target_boxes.reshape(n, -1, 2, 4).permute(2, 0, 1, 3)[0]
         
-        cls_loss = sigmoid_cross_entropy_retina(rpn_cls_prob_final, 
+        cls_loss = loss_opr.sigmoid_cross_entropy_retina(rpn_cls_prob_final, 
                 labels, alpha = 0.25, gamma = 2)
-        rpn_bbox_loss = smooth_l1_loss_retina(offsets_final, target_boxes, labels)
+        rpn_bbox_loss = loss_opr.smooth_l1_loss_retina(offsets_final, target_boxes, labels)
         rpn_labels = labels.view(n, -1, 1)
-        rpn_iou_loss = iou_l1_loss(rpn_iou_prob_final, ious_target, rpn_labels)
+        rpn_iou_loss = loss_opr.iou_l1_loss(rpn_iou_prob_final, ious_target, rpn_labels)
         
         loss_dict = {}
         loss_dict['rpn_cls_loss'] = cls_loss
@@ -199,10 +200,9 @@ class RetinaNetCriteriaV2(nn.Module):
 class RetinaNet_Head(nn.Module):
     def __init__(self):
         super().__init__()
-        num_convs = 4
-        in_channels = 256
-        cls_subnet = []
-        bbox_subnet = []
+
+        num_convs, in_channels = 4, 256
+        cls_subnet, bbox_subnet = [], []
         for _ in range(num_convs):
             cls_subnet.append(
                 nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1)
@@ -212,6 +212,7 @@ class RetinaNet_Head(nn.Module):
                 nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1)
             )
             bbox_subnet.append(nn.ReLU(inplace=True))
+        
         self.cls_subnet = nn.Sequential(*cls_subnet)
         self.bbox_subnet = nn.Sequential(*bbox_subnet)
         # predictor
@@ -225,6 +226,7 @@ class RetinaNet_Head(nn.Module):
         self.iou_pred = nn.Conv2d(
             in_channels, config.num_cell_anchors * (config.num_classes-1),
             kernel_size = 3, stride=1, padding = 1)
+        
         self._init_weights()
 
     def _init_weights(self):

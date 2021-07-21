@@ -1,12 +1,11 @@
-import os
-import cv2
+import os, cv2
 import torch
 import numpy as np
-
-from utils import misc_utils
+from kits.misc_utils import load_json_lines, load_gt, load_img
+import pdb
 
 class CrowdHuman(torch.utils.data.Dataset):
-    def __init__(self, config, if_train, split_data=None):
+    def __init__(self, config, if_train):
         if if_train:
             self.training = True
             source = config.train_source
@@ -17,9 +16,7 @@ class CrowdHuman(torch.utils.data.Dataset):
             source = config.eval_source
             self.short_size = config.eval_image_short_size
             self.max_size = config.eval_image_max_size
-        self.records = misc_utils.load_json_lines(source)
-        if self.training is False and split_data is not None:
-            self.records = split_data
+        self.records = load_json_lines(source)
         self.config = config
 
     def __getitem__(self, index):
@@ -35,14 +32,14 @@ class CrowdHuman(torch.utils.data.Dataset):
             if_flap = False
         # image
         image_path = os.path.join(self.config.image_folder, record['ID']+'.png')
-        image = misc_utils.load_img(image_path)
+        image = load_img(image_path)
         image_h = image.shape[0]
         image_w = image.shape[1]
         if if_flap:
             image = cv2.flip(image, 1)
         if self.training:
             # ground_truth
-            gtboxes = misc_utils.load_gt(record, 'gtboxes', 'fbox', self.config.class_names)
+            gtboxes = load_gt(record, 'gtboxes', 'fbox', self.config.class_names)
             keep = (gtboxes[:, 2]>=0) * (gtboxes[:, 3]>=0)
             gtboxes=gtboxes[keep, :]
             gtboxes[:, 2:4] += gtboxes[:, :2]
@@ -60,7 +57,7 @@ class CrowdHuman(torch.utils.data.Dataset):
             resized_image = cv2.resize(image, (t_width, t_height), interpolation=cv2.INTER_LINEAR)
             resized_image = resized_image.transpose(2, 0, 1)
             image = torch.tensor(resized_image).float()
-            gtboxes = misc_utils.load_gt(record, 'gtboxes', 'fbox', self.config.class_names)
+            gtboxes = load_gt(record, 'gtboxes', 'fbox', self.config.class_names)
             gtboxes[:, 2:4] += gtboxes[:, :2]
             gtboxes = torch.tensor(gtboxes)
             # im_info
